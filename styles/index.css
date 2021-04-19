@@ -1,0 +1,120 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0px;
+  height: 100%;
+  width: 100%;
+  background-color: #333333;
+  font-family: monospace;
+}
+
+canvas {
+  border: 1px solid black;
+}
+
+#blur-overlay {
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+  left: 0px;
+  right: 0px;
+
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+
+  background-color: #00000099;
+}
+
+#terminal {
+  width: 100%;
+  padding: 8px;
+  background-color: black;
+  color: green;
+}
+
+@keyframes blink-slow {
+  0% {
+    color: inherit;
+    text-shadow: inherit;
+  }
+  0.75% {
+    color: #633;
+  }
+  1.5% {
+    text-shadow: none;
+  }
+  2.25% {
+    color: #ffbbbb;
+    text-shadow: inherit;
+  }
+  3% {
+    color: #633;
+    text-shadow: none;
+  }
+  3.75% {
+    color: #ffbbbb;
+    text-shadow: inherit;
+  }
+  8.5% {
+    color: #633;
+    text-shadow: none;
+  }
+  9% {
+    color: inherit;
+    text-shadow: inherit;
+  }
+}
+
+@keyframes blink-fast {
+  78% {
+    color: inherit;
+    text-shadow: inherit;
+  }
+  79% {
+    color: #633;
+  }
+  80% {
+    text-shadow: none;
+  }
+  81% {
+    color: #ffbbbb;
+    text-shadow: inherit;
+  }
+  82% {
+    color: #633;
+    text-shadow: none;
+  }
+  83% {
+    color: #ffbbbb;
+    text-shadow: inherit;
+  }
+  92% {
+    color: #633;
+    text-shadow: none;
+  }
+  92.5% {
+    color: inherit;
+    text-shadow: inherit;
+  }
+}
+
+.blink {
+  animation: blink-fast linear infinite 3s;
+}
+.blink:nth-of-type(2) {
+  animation: blink-slow linear infinite 7s;
+}
+
+.big-red-text {
+  font-size: 4em;
+  color: #ffeeee;
+  text-shadow: 0 0 0.2em #ff4444;
+  letter-spacing: 0.5em;
+}
+
+.flex-spacer {
+  flex-grow: 1;
+}

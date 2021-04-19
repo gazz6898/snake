@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+
+    <title>Snake</title>
+    <meta name="description" content="Snake" />
+
+    <link rel="stylesheet" href="styles/index.css" />
+
+    <script src="scripts/global-constants.js"></script>
+    <script src="scripts/Time.js"></script>
+    <script src="scripts/InputManager.js"></script>
+    <script src="scripts/Player.js"></script>
+    <script src="scripts/StateManager.js"></script>
+    <script src="scripts/Renderer.js"></script>
+    <script src="scripts/index.js"></script>
+  </head>
+
+  <body>
+    <div id="blur-overlay" style="visibility: hidden">
+      <div class="flex-spacer"></div>
+      <p class="big-red-text">
+        <span>F</span><span class="blink">O</span><span>CUS LOS</span><span class="blink">T</span>
+      </p>
+      <div class="flex-spacer"></div>
+    </div>
+    <canvas id="canvas" height="300px" width="600px"></canvas>
+    <pre id="terminal"></pre>
+  </body>
+</html>
