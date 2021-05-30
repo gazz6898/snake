@@ -1,7 +1,9 @@
 class StateManager {
   static initialize() {
     const {
-      HTML_ELEMENTS: { CANVAS },
+      HTML_ELEMENTS: { CANVAS_GL, CANVAS_2D },
+      TILES_X,
+      TILES_Y,
       TILE_SIZE,
     } = GLOBAL_CONSTANTS;
     Time.initialize();
@@ -13,13 +15,19 @@ class StateManager {
       right: 'KeyD',
     });
 
-    Renderer.initialize(CANVAS);
+    Renderer.initialize(CANVAS_2D, CANVAS_GL);
+    Renderer.register2D((ctx, c) => {
+      ctx.fillStyle = 'red';
+      const [foodX, foodY] = StateManager.foodPos;
+      ctx.fillRect(foodX * TILE_SIZE + 5, foodY * TILE_SIZE + 5, TILE_SIZE - 10, TILE_SIZE - 10);
+    });
 
     Player.initialize();
+    Renderer.register2D(Player.render);
 
     StateManager.foodPos = [
-      Math.round((Math.random() * (CANVAS.width - TILE_SIZE)) / TILE_SIZE) * TILE_SIZE,
-      Math.round((Math.random() * (CANVAS.height - TILE_SIZE)) / TILE_SIZE) * TILE_SIZE,
+      Math.floor(Math.random() * TILES_X),
+      Math.floor(Math.random() * TILES_Y),
     ];
     StateManager.start();
 
@@ -50,12 +58,7 @@ class StateManager {
     StateManager.canStart = false;
     StateManager.pause();
     Renderer.clear();
-    Renderer.withContext((ctx, c) => {
-      ctx.fillStyle = 'black';
-      ctx.fillRect(0, 0, c.width, c.height);
-    });
-    Player.render();
-    Renderer.withContext((ctx, c) => {
+    Renderer.with2DContext((ctx, c) => {
       ctx.fillStyle = 'red';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -67,8 +70,9 @@ class StateManager {
 
   static update() {
     const {
-      HTML_ELEMENTS: { CANVAS },
-      TILE_SIZE,
+      HTML_ELEMENTS: { CANVAS_2D },
+      TILES_X,
+      TILES_Y,
     } = GLOBAL_CONSTANTS;
 
     const startTime = new Date();
@@ -88,7 +92,7 @@ class StateManager {
       StateManager.grid = {};
       Player.move();
       const [headX, headY] = Player.headPosition;
-      if (headX < 0 || headY < 0 || headX >= CANVAS.width || headY >= CANVAS.height) {
+      if (headX < 0 || headY < 0 || headX >= TILES_X || headY >= TILES_Y) {
         StateManager.gameOver();
         return;
       }
@@ -105,31 +109,43 @@ class StateManager {
       }
 
       if (gotFood) {
-        let newFoodX =
-          Math.round((Math.random() * (CANVAS.width - TILE_SIZE)) / TILE_SIZE) * TILE_SIZE;
-        let newFoodY =
-          Math.round((Math.random() * (CANVAS.height - TILE_SIZE)) / TILE_SIZE) * TILE_SIZE;
+        let newFoodX = Math.floor(Math.random() * TILES_X);
+        let newFoodY = Math.floor(Math.random() * TILES_Y);
         while (StateManager.grid[`${newFoodX},${newFoodY}`]) {
-          newFoodX =
-            Math.round((Math.random() * (CANVAS.width - TILE_SIZE)) / TILE_SIZE) * TILE_SIZE;
-          newFoodY =
-            Math.round((Math.random() * (CANVAS.height - TILE_SIZE)) / TILE_SIZE) * TILE_SIZE;
+          newFoodX = Math.floor(Math.random() * TILES_X);
+          newFoodY = Math.floor(Math.random() * TILES_Y);
         }
         StateManager.foodPos = [newFoodX, newFoodY];
         Player.size++;
       }
     }
 
-    const joystick = [];
+    const boardStr = [...new Array(TILES_Y)].map((_, row) => {
+      const rowStr = [];
+      for (let col = 0; col < TILES_X; col++) {
+        if (StateManager.grid[`${col},${row}`]) {
+          rowStr.push('#');
+        } else if (StateManager.foodPos[0] === col && StateManager.foodPos[1] === row) {
+          rowStr.push('@');
+        } else {
+          rowStr.push(' ');
+        }
+      }
+      return rowStr.join(' ');
+    });
+
+    const joystickStr = [];
     for (let i = 1; i >= -1; i--) {
       if (i === axes.y) {
-        joystick.push(['O--', '-O-', '--O'][axes.x + 1]);
+        joystickStr.push(['O--', '-O-', '--O'][axes.x + 1]);
       } else {
-        joystick.push('---');
+        joystickStr.push('---');
       }
     }
 
-    GLOBAL_CONSTANTS.HTML_ELEMENTS.TERMINAL.innerText = joystick.join('\n');
+    GLOBAL_CONSTANTS.HTML_ELEMENTS.TERMINAL.innerText = `${boardStr
+      .map(s => `| ${s} |`)
+      .join('\n')}\n\n${joystickStr.join('\n')}`;
 
     Renderer.render();
     const endTime = new Date();

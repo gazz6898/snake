@@ -14,6 +14,14 @@ canvas {
   border: 1px solid black;
 }
 
+#canvas-2d {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  background-color: transparent;
+  z-index: 1;
+}
+
 #blur-overlay {
   position: absolute;
   top: 0px;
