@@ -23,7 +23,7 @@ class StateManager {
     });
 
     Player.initialize();
-    Renderer.register2D(Player.render);
+    Renderer.register2D(Player.render2D);
 
     StateManager.foodPos = [
       Math.floor(Math.random() * TILES_X),

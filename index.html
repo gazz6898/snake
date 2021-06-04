@@ -10,29 +10,41 @@
     <link rel="stylesheet" href="styles/index.css" />
 
     <script id="vertex-shader" type="x-shader/x-vertex">
-      attribute vec4 a_position;
       attribute vec4 a_color;
+      attribute vec3 a_normal;
+      attribute vec4 a_position;
 
-      uniform mat4 u_modelMatrix;
-      uniform mat4 u_projectionMatrix;
+      uniform mat4 u_normals;
+      uniform mat4 u_modelView;
+      uniform mat4 u_projection;
 
       varying vec4 v_fColor;
+      varying highp vec3 v_fLighting;
 
-      void main() {
+      void main(void) {
+        gl_Position = u_projection * u_modelView * a_position;
+
+        // Apply lighting effect
+
+        highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
+        highp vec3 directionalLightColor = vec3(1, 1, 1);
+        highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));
+
+        highp vec4 transformedNormal = u_normals * vec4(a_normal, 1.0);
+
         v_fColor = a_color;
-        gl_Position = u_projectionMatrix * u_modelMatrix * a_position;
+        v_fLighting = ambientLight + (directionalLightColor * max(dot(transformedNormal.xyz, directionalVector), 0.0));
       }
     </script>
 
     <script id="fragment-shader" type="x-shader/x-fragment">
       precision mediump float;
 
-      varying vec4 v_fColor;
+      varying highp vec3 v_fLighting;
+      varying highp vec4 v_fColor;
 
-      void
-      main()
-      {
-          gl_FragColor = v_fColor;
+      void main(void) {
+        gl_FragColor = vec4(v_fColor.rgb * v_fLighting, v_fColor.a);
       }
     </script>
 

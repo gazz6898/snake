@@ -15,10 +15,7 @@ class Renderer {
   /** @type {WebGLProgram} */
   static _program = null;
 
-  /** @type {{ [id: string]: () => GenericShape }} */
-  static _toAttributesAndUniforms = {};
-
-  /** @type {{ [id: string]: { [buf_id: string]: WebGLBuffer } }} */
+  /** @type {{ [buf_id: string]: WebGLBuffer }} */
   static _buffers = {};
 
   /** @type {{ [mat_name: string]: number[][] }} */
@@ -26,16 +23,16 @@ class Renderer {
 
   /** @type {Transform} */
   static _model = {
-    translation: [0, 0, 25],
+    translation: [0, 0, 0],
     scale: [1, 1, 1],
     rotation: [0, 0, 0],
   };
 
   /** @type {Transform} */
   static _camera = {
-    translation: [0, 0, 0],
+    translation: [10, 10, 20],
     scale: [1, 1, 1],
-    rotation: [0, 0, 0],
+    rotation: [-30, 0, 0],
   };
 
   /**
@@ -47,6 +44,7 @@ class Renderer {
     Renderer._2d = canvas2D.getContext('2d');
 
     Renderer._canvasGL = canvasGL;
+    /** @type {WebGLRenderingContext} */
     const gl = WebGLUtils.setupWebGL(canvasGL);
     Renderer._gl = gl;
 
@@ -58,97 +56,75 @@ class Renderer {
     gl.viewport(0, 0, canvasGL.width, canvasGL.height);
     gl.clearColor(0, 0, 0, 1);
 
-    Renderer._program = initShaders(gl, 'vertex-shader', 'fragment-shader');
-    gl.useProgram(Renderer._program);
+    const program = initShaders(gl, 'vertex-shader', 'fragment-shader');
+    Renderer._program = program;
 
-    Renderer._matrices.model = transformM4(Renderer._model);
-    Renderer._matrices.perspective = perspective(60, canvasGL.width / canvasGL.height, 1, 2000);
-    Renderer._matrices.camera = transformM4(Renderer._camera.translation);
-    Renderer._matrices.projection = mult(
-      Renderer._matrices.perspective,
-      inverse(Renderer._matrices.camera)
-    );
+    gl.useProgram(program);
+
+    Renderer._matrices.perspective = perspective(90, canvasGL.width / canvasGL.height, 0.1, 120);
+    Renderer._updateGlobalMatrices();
+    Renderer._initBuffers();
 
     Renderer.clear();
   }
 
-  static to_buffers(id) {
+  static _initBuffers() {
     const gl = Renderer._gl;
-    const attrUnifGetter = Renderer._toAttributesAndUniforms[id];
-    if (attrUnifGetter) {
-      const { attributes = {}, uniforms = {} } = attrUnifGetter();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Renderer._getBuffer('indices'));
+    gl.bufferData(
+      gl.ELEMENT_ARRAY_BUFFER,
+      new Uint16Array(
+        [
+          [0, 1, 2, 0, 2, 3],
+          [4, 5, 6, 4, 6, 7],
+          [8, 9, 10, 8, 10, 11],
+          [12, 13, 14, 12, 14, 15],
+          [16, 17, 18, 16, 18, 19],
+          [20, 21, 22, 20, 22, 23],
+        ].flat()
+      ),
+      gl.STATIC_DRAW
+    );
 
-      if (!Renderer._buffers[id]) {
-        Renderer._buffers[id] = [];
-      }
+    gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_position'));
+    gl.bufferData(gl.ARRAY_BUFFER, GLOBAL_CONSTANTS.SHAPES.CUBE, gl.STATIC_DRAW);
 
-      const buffers = Renderer._buffers[id];
+    gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_color'));
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(
+        [
+          [1.0, 1.0, 1.0], // Front face: white
+          [1.0, 0.0, 0.0], // Back face: red
+          [0.0, 1.0, 0.0], // Top face: green
+          [0.0, 0.0, 1.0], // Bottom face: blue
+          [1.0, 1.0, 0.0], // Right face: yellow
+          [1.0, 0.0, 1.0], // Left face: purple
+        ].flatMap(c => [c, c, c, c].flat())
+      ),
+      gl.STATIC_DRAW
+    );
 
-      let vertexCount = 0;
+    gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_normal'));
+    gl.bufferData(gl.ARRAY_BUFFER, GLOBAL_CONSTANTS.NORMALS.CUBE, gl.STATIC_DRAW);
+  }
 
-      // Set up attributes
-      for (const attr in attributes) {
-        const { type, value } = attributes[attr];
+  static _updateGlobalMatrices() {
+    Renderer._matrices.model = transformM4(Renderer._model);
+    Renderer._matrices.camera = transformM4(Renderer._camera);
+    Renderer._matrices.projection = mult(
+      Renderer._matrices.perspective,
+      inverse(Renderer._matrices.camera)
+    );
+  }
 
-        const a_attr = `a_${attr}`;
-        if (!buffers[a_attr]) {
-          buffers[a_attr] = gl.createBuffer();
-        }
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffers[a_attr]);
-        const attrLoc = gl.getAttribLocation(Renderer._program, a_attr);
-        gl.enableVertexAttribArray(attrLoc);
-        gl.vertexAttribPointer(attrLoc, Number(type[0]), gl.FLOAT, false, 0, 0);
-        gl.bufferData(gl.ARRAY_BUFFER, value, gl.STATIC_DRAW);
-        if (!vertexCount) {
-          vertexCount = value.length / Number(type[0]);
-        }
-      }
+  static setGlobalUniforms() {
+    const gl = Renderer._gl;
+    const program = Renderer._program;
+    const { model, projection } = Renderer._matrices;
 
-      // Set up uniforms
-      for (const unif in uniforms) {
-        const { args = [], type } = uniforms[unif];
-        const unifLoc = gl.getUniformLocation(Renderer._program, `u_${unif}`);
-        switch (type) {
-          case '1f':
-            gl.uniform1f(unifLoc, ...args);
-            break;
-          case '1fv':
-            gl.uniform1fv(unifLoc, ...args);
-            break;
-          case '2f':
-            gl.uniform2f(unifLoc, ...args);
-            break;
-          case '2fv':
-            gl.uniform2fv(unifLoc, ...args);
-            break;
-          case 'Matrix2fv':
-            gl.uniformMatrix2fv(unifLoc, ...args);
-            break;
-          case '3f':
-            gl.uniform3f(unifLoc, ...args);
-            break;
-          case '3fv':
-            gl.uniform3fv(unifLoc, ...args);
-            break;
-          case 'Matrix3fv':
-            gl.uniformMatrix3fv(unifLoc, ...args);
-            break;
-          case '4f':
-            gl.uniform4f(unifLoc, ...args);
-            break;
-          case '4fv':
-            gl.uniform4fv(unifLoc, ...args);
-            break;
-          case 'Matrix4fv':
-            gl.uniformMatrix4fv(unifLoc, ...args);
-            break;
-          default: {
-          }
-        }
-      }
-
-      return vertexCount;
-    }
+    gl.uniformMatrix4fv(gl.getUniformLocation(program, 'u_modelView'), false, flatten(model));
+    gl.uniformMatrix4fv(gl.getUniformLocation(program, 'u_projection'), false, flatten(projection));
   }
 
   /**
@@ -156,9 +132,11 @@ class Renderer {
    */
   static clear() {
     const gl = Renderer._gl;
+    gl.clearColor(0.0, 0.0, 0.0, 1.0); // Clear to black, fully opaque
+    gl.clearDepth(1.0); // Clear everything
+    gl.enable(gl.DEPTH_TEST); // Enable depth testing
+    gl.depthFunc(gl.LEQUAL); // Near things obscure far things
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    // gl.enable(gl.CULL_FACE);
-    gl.enable(gl.DEPTH_TEST);
     Renderer.with2DContext((ctx, { width, height }) => {
       ctx.clearRect(0, 0, width, height);
     });
@@ -168,11 +146,91 @@ class Renderer {
    * Draws the contents of both 2D and 3D canvases.
    */
   static render() {
+    Renderer._updateGlobalMatrices();
+    Renderer.setGlobalUniforms();
     Renderer.clear();
+    Renderer._render3D();
     Renderer._registered2D.forEach(Renderer.with2DContext);
-    for (const id in Renderer._toAttributesAndUniforms) {
-      const vertices = Renderer.to_buffers(id);
-      Renderer._gl.drawArrays(Renderer._gl.TRIANGLE_FAN, 0, vertices);
+  }
+
+  static _getBuffer(id) {
+    if (!Renderer._buffers[id]) {
+      Renderer._buffers[id] = Renderer._gl.createBuffer();
+    }
+    return Renderer._buffers[id];
+  }
+
+  /**
+   * fuck it, ad-hoc 3D rendering
+   */
+  static _render3D() {
+    const gl = Renderer._gl;
+    const program = Renderer._program;
+
+    {
+      const numComponents = 3;
+      const type = gl.FLOAT;
+      const normalize = false;
+      const stride = 0;
+      const offset = 0;
+
+      const [x, y] = Player.headPosition;
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_position'));
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        GLOBAL_CONSTANTS.SHAPES.CUBE.map((c, i) => {
+          switch (i % 3) {
+            case 0:
+              return c + x;
+            case 1:
+              return c;
+            case 2:
+              return c + y;
+          }
+        }),
+        gl.STATIC_DRAW
+      );
+
+      const attrPos = gl.getAttribLocation(program, 'a_position');
+      gl.vertexAttribPointer(attrPos, numComponents, type, normalize, stride, offset);
+      gl.enableVertexAttribArray(attrPos);
+    }
+
+    {
+      const numComponents = 3;
+      const type = gl.FLOAT;
+      const normalize = false;
+      const stride = 0;
+      const offset = 0;
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_color'));
+
+      const attrPos = gl.getAttribLocation(program, 'a_color');
+      gl.vertexAttribPointer(attrPos, numComponents, type, normalize, stride, offset);
+      gl.enableVertexAttribArray(attrPos);
+    }
+
+    {
+      const numComponents = 3;
+      const type = gl.FLOAT;
+      const normalize = false;
+      const stride = 0;
+      const offset = 0;
+      gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_normal'));
+
+      const attrPos = gl.getAttribLocation(program, 'a_normal');
+      gl.vertexAttribPointer(attrPos, numComponents, type, normalize, stride, offset);
+      gl.enableVertexAttribArray(attrPos);
+    }
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Renderer._getBuffer('indices'));
+
+    {
+      const vertexCount = 36;
+      const type = gl.UNSIGNED_SHORT;
+      const offset = 0;
+      gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
     }
   }
 

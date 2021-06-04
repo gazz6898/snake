@@ -22,37 +22,7 @@ class Player {
     Player.positions.unshift(newPosition);
   }
 
-  /** @returns {GenericShape} */
-  static toAttributesAndUniforms() {
-    return {
-      attributes: {
-        position: {
-          type: '4fv',
-          value: new Float32Array(
-            Player.positions
-              .flatMap(([x, y]) => mult(translate(x, y, 0), mat4(...GLOBAL_CONSTANTS.SHAPES.RECT)))
-              .flat()
-          ),
-        },
-        color: {
-          type: '4fv',
-          value: new Float32Array(Player.positions.flatMap(() => [0, 1, 0, 1])),
-        },
-      },
-      uniforms: {
-        modelMatrix: {
-          args: [false, flatten(Renderer?._matrices?.model)],
-          type: 'Matrix4fv',
-        },
-        projectionMatrix: {
-          args: [false, flatten(Renderer?._matrices?.projection)],
-          type: 'Matrix4fv',
-        },
-      },
-    };
-  }
-
-  static render(ctx, c) {
+  static render2D(ctx, c) {
     const { TILE_SIZE } = GLOBAL_CONSTANTS;
     const [headPos, ...tail] = Player.positions.map(coords =>
       coords.map(c => (c + 0.5) * TILE_SIZE)
@@ -92,6 +62,7 @@ class Player {
 }
 
 Player.size = 0;
+/** @type {[number, number][]} */
 Player.positions = [];
 Player.velocity = [0, 0];
 Player.nextVelocity = [0, 0];
