@@ -8,12 +8,13 @@
 
 const trace = x => console.log(x) ?? x;
 
+/** @type {(param0: Transform) => *} */
 const transformM4 = ({ translation, scale, rotation }) => {
   const mats = [];
   if (translation && (translation[0] || translation[1] || translation[2])) {
     mats.push(translate(...translation));
   }
-  if (scale && (scale[0] || scale[1] || scale[2])) {
+  if (scale && (scale[0] !== 1 || scale[1] !== 1 || scale[2] !== 1)) {
     mats.push(scalem(...scale));
   }
   if (rotation) {
@@ -36,25 +37,57 @@ const GLOBAL_CONSTANTS = {
   FPS: 60,
 
   SHAPES: {
-    CUBE: new Float32Array([
-      // Front face
-      -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0,
+    CUBE: new Float32Array(
+      [
+        // Front face
+        [
+          [-1.0, -1.0, 1.0],
+          [1.0, -1.0, 1.0],
+          [1.0, 1.0, 1.0],
+          [-1.0, 1.0, 1.0],
+        ],
 
-      // Back face
-      -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0,
+        // Back face
+        [
+          [-1.0, -1.0, -1.0],
+          [-1.0, 1.0, -1.0],
+          [1.0, 1.0, -1.0],
+          [1.0, -1.0, -1.0],
+        ],
 
-      // Top face
-      -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0,
+        // Top face
+        [
+          [-1.0, 1.0, -1.0],
+          [-1.0, 1.0, 1.0],
+          [1.0, 1.0, 1.0],
+          [1.0, 1.0, -1.0],
+        ],
 
-      // Bottom face
-      -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, -1.0, -1.0, 1.0,
+        // Bottom face
+        [
+          [-1.0, -1.0, -1.0],
+          [1.0, -1.0, -1.0],
+          [1.0, -1.0, 1.0],
+          [-1.0, -1.0, 1.0],
+        ],
 
-      // Right face
-      1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0,
+        // Right face
+        [
+          [1.0, -1.0, -1.0],
+          [1.0, 1.0, -1.0],
+          [1.0, 1.0, 1.0],
+          [1.0, -1.0, 1.0],
+        ],
 
-      // Left face
-      -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0,
-    ]),
+        // Left face
+        [
+          [-1.0, -1.0, -1.0],
+          [-1.0, -1.0, 1.0],
+          [-1.0, 1.0, 1.0],
+          [-1.0, 1.0, -1.0],
+        ]
+      ].flat(2)
+    ),
   },
   NORMALS: ['X', 'Y', 'Z'].reduce((obj, axis, i) => {
     obj[`${axis}+`] = new Float32Array([0, 0, 0]);

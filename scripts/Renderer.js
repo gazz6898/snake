@@ -167,70 +167,103 @@ class Renderer {
     const gl = Renderer._gl;
     const program = Renderer._program;
 
-    {
-      const numComponents = 3;
-      const type = gl.FLOAT;
-      const normalize = false;
-      const stride = 0;
-      const offset = 0;
+    for (const [x, y] of Player.positions) {
+      {
+        gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_position'));
+        gl.bufferData(
+          gl.ARRAY_BUFFER,
+          GLOBAL_CONSTANTS.SHAPES.CUBE.map((c, i) => {
+            switch (i % 3) {
+              case 0:
+                return c + x * 1.5;
+              case 1:
+                return c;
+              case 2:
+                return c + y * 1.5;
+            }
+          }),
+          gl.STATIC_DRAW
+        );
 
-      const [x, y] = Player.headPosition;
+        const attrPos = gl.getAttribLocation(program, 'a_position');
+        gl.vertexAttribPointer(attrPos, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(attrPos);
+      }
 
-      gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_position'));
-      gl.bufferData(
-        gl.ARRAY_BUFFER,
-        GLOBAL_CONSTANTS.SHAPES.CUBE.map((c, i) => {
-          switch (i % 3) {
-            case 0:
-              return c + x;
-            case 1:
-              return c;
-            case 2:
-              return c + y;
-          }
-        }),
-        gl.STATIC_DRAW
-      );
+      {
+        gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_color'));
 
-      const attrPos = gl.getAttribLocation(program, 'a_position');
-      gl.vertexAttribPointer(attrPos, numComponents, type, normalize, stride, offset);
-      gl.enableVertexAttribArray(attrPos);
+        const attrPos = gl.getAttribLocation(program, 'a_color');
+        gl.vertexAttribPointer(attrPos, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(attrPos);
+      }
+
+      {
+        gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_normal'));
+
+        const attrPos = gl.getAttribLocation(program, 'a_normal');
+        gl.vertexAttribPointer(attrPos, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(attrPos);
+      }
+
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Renderer._getBuffer('indices'));
+
+      {
+        const vertexCount = 36;
+        const type = gl.UNSIGNED_SHORT;
+        const offset = 0;
+        gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
+      }
     }
 
     {
-      const numComponents = 3;
-      const type = gl.FLOAT;
-      const normalize = false;
-      const stride = 0;
-      const offset = 0;
+      const [x, y] = StateManager.foodPos;
+      {
+        gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_position'));
+        gl.bufferData(
+          gl.ARRAY_BUFFER,
+          GLOBAL_CONSTANTS.SHAPES.CUBE.map((c, i) => {
+            switch (i % 3) {
+              case 0:
+                return c + x * 1.5;
+              case 1:
+                return c;
+              case 2:
+                return c + y *  1.5;
+            }
+          }),
+          gl.STATIC_DRAW
+        );
 
-      gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_color'));
+        const attrPos = gl.getAttribLocation(program, 'a_position');
+        gl.vertexAttribPointer(attrPos, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(attrPos);
+      }
 
-      const attrPos = gl.getAttribLocation(program, 'a_color');
-      gl.vertexAttribPointer(attrPos, numComponents, type, normalize, stride, offset);
-      gl.enableVertexAttribArray(attrPos);
-    }
+      {
+        gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_color'));
 
-    {
-      const numComponents = 3;
-      const type = gl.FLOAT;
-      const normalize = false;
-      const stride = 0;
-      const offset = 0;
-      gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_normal'));
+        const attrPos = gl.getAttribLocation(program, 'a_color');
+        gl.vertexAttribPointer(attrPos, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(attrPos);
+      }
 
-      const attrPos = gl.getAttribLocation(program, 'a_normal');
-      gl.vertexAttribPointer(attrPos, numComponents, type, normalize, stride, offset);
-      gl.enableVertexAttribArray(attrPos);
-    }
+      {
+        gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_normal'));
 
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Renderer._getBuffer('indices'));
+        const attrPos = gl.getAttribLocation(program, 'a_normal');
+        gl.vertexAttribPointer(attrPos, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(attrPos);
+      }
 
-    {
-      const vertexCount = 36;
-      const type = gl.UNSIGNED_SHORT;
-      const offset = 0;
-      gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Renderer._getBuffer('indices'));
+
+      {
+        const vertexCount = 36;
+        const type = gl.UNSIGNED_SHORT;
+        const offset = 0;
+        gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
+      }
     }
   }
 
