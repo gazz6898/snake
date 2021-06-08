@@ -32,6 +32,7 @@ class StateManager {
     StateManager.start();
 
     window.addEventListener('blur', StateManager.pause, { once: true });
+    aud_bgm.play();
   }
 
   static start(event) {
@@ -55,6 +56,8 @@ class StateManager {
   }
 
   static gameOver() {
+    aud_go.play();
+    aud_bgm.pause();
     StateManager.canStart = false;
     StateManager.pause();
     Renderer.clear();
@@ -109,6 +112,7 @@ class StateManager {
       }
 
       if (gotFood) {
+        aud_eat.play();
         let newFoodX = Math.floor(Math.random() * TILES_X);
         let newFoodY = Math.floor(Math.random() * TILES_Y);
         while (StateManager.grid[`${newFoodX},${newFoodY}`]) {
@@ -162,3 +166,23 @@ StateManager.canStart = true;
 StateManager.grid = {};
 
 StateManager.foodPos = [0, 0];
+
+// Howler Audio Objects
+// Eating
+const aud_eat = new Howl({
+	src: ['assets/sounds/apple.mp3', 'assets/sounds/apple.ogg'],
+	volume: 0.5
+});
+
+// Game Over
+const aud_go = new Howl({
+	src: ['assets/sounds/game_over.mp3', 'assets/sounds/game_over.ogg'],
+	volume: 0.5
+});
+
+// BGM
+const aud_bgm = new Howl({
+	src: ['assets/sounds/bgm1.ogg'],
+	volume: 0.25,
+	loop: true
+});

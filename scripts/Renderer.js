@@ -30,7 +30,7 @@ class Renderer {
 
   /** @type {Transform} */
   static _camera = {
-    translation: [10, 10, 20],
+    translation: [15, 10, 20],
     scale: [1, 1, 1],
     rotation: [-30, 0, 0],
   };
@@ -105,6 +105,53 @@ class Renderer {
       gl.STATIC_DRAW
     );
 
+    gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_color_food'));
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(
+        [
+          [1.0, 0, 0],
+          [1.0, 0, 0],
+          [1.0, 0, 0],
+          [1.0, 0, 0],
+          [1.0, 0, 0],
+          [1.0, 0, 0],
+        ].flatMap(c => [c, c, c, c].flat())
+      ),
+      gl.STATIC_DRAW
+    );
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_color_ground_0'));
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(
+        [
+          [0, 1.0, 1.0],
+          [0, 1.0, 1.0],
+          [0, 1.0, 1.0],
+          [0, 1.0, 1.0],
+          [0, 1.0, 1.0],
+          [0, 1.0, 1.0],
+        ].flatMap(c => [c, c, c, c].flat())
+      ),
+      gl.STATIC_DRAW
+    );
+    gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_color_ground_1'));
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(
+        [
+          [0, 0.5, 1.0],
+          [0, 0.5, 1.0],
+          [0, 0.5, 1.0],
+          [0, 0.5, 1.0],
+          [0, 0.5, 1.0],
+          [0, 0.5, 1.0],
+        ].flatMap(c => [c, c, c, c].flat())
+      ),
+      gl.STATIC_DRAW
+    );
+
     gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_normal'));
     gl.bufferData(gl.ARRAY_BUFFER, GLOBAL_CONSTANTS.NORMALS.CUBE, gl.STATIC_DRAW);
   }
@@ -150,7 +197,7 @@ class Renderer {
     Renderer.setGlobalUniforms();
     Renderer.clear();
     Renderer._render3D();
-    Renderer._registered2D.forEach(Renderer.with2DContext);
+    // Renderer._registered2D.forEach(Renderer.with2DContext);
   }
 
   static _getBuffer(id) {
@@ -166,6 +213,59 @@ class Renderer {
   static _render3D() {
     const gl = Renderer._gl;
     const program = Renderer._program;
+
+    const { TILES_X, TILES_Y } = GLOBAL_CONSTANTS;
+
+    for (let x = 0; x < TILES_X; x++) {
+      for (let y = 0; y < TILES_Y; y++) {
+        {
+          gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_position'));
+          gl.bufferData(
+            gl.ARRAY_BUFFER,
+            GLOBAL_CONSTANTS.SHAPES.CUBE.map((c, i) => {
+              switch (i % 3) {
+                case 0:
+                  return (c * 2) / 3 + x * 1.5;
+                case 1:
+                  return (c * 2) / 3 - 2;
+                case 2:
+                  return (c * 2) / 3 + y * 1.5;
+              }
+            }),
+            gl.STATIC_DRAW
+          );
+
+          const attrPos = gl.getAttribLocation(program, 'a_position');
+          gl.vertexAttribPointer(attrPos, 3, gl.FLOAT, false, 0, 0);
+          gl.enableVertexAttribArray(attrPos);
+        }
+
+        {
+          gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer(`a_color_ground_${(x + y) % 2}`));
+
+          const attrPos = gl.getAttribLocation(program, 'a_color');
+          gl.vertexAttribPointer(attrPos, 3, gl.FLOAT, false, 0, 0);
+          gl.enableVertexAttribArray(attrPos);
+        }
+
+        {
+          gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_normal'));
+
+          const attrPos = gl.getAttribLocation(program, 'a_normal');
+          gl.vertexAttribPointer(attrPos, 3, gl.FLOAT, false, 0, 0);
+          gl.enableVertexAttribArray(attrPos);
+        }
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Renderer._getBuffer('indices'));
+
+        {
+          const vertexCount = 36;
+          const type = gl.UNSIGNED_SHORT;
+          const offset = 0;
+          gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
+        }
+      }
+    }
 
     for (const [x, y] of Player.positions) {
       {
@@ -229,7 +329,7 @@ class Renderer {
               case 1:
                 return c;
               case 2:
-                return c + y *  1.5;
+                return c + y * 1.5;
             }
           }),
           gl.STATIC_DRAW
@@ -241,7 +341,7 @@ class Renderer {
       }
 
       {
-        gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_color'));
+        gl.bindBuffer(gl.ARRAY_BUFFER, Renderer._getBuffer('a_color_food'));
 
         const attrPos = gl.getAttribLocation(program, 'a_color');
         gl.vertexAttribPointer(attrPos, 3, gl.FLOAT, false, 0, 0);
